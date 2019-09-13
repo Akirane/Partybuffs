@@ -4,6 +4,17 @@ Shows party members buffs icons without the necesity of targetting. (Doesn't wor
 
 Uses the modified icons of FFXIView of this version: https://github.com/KenshiDRK/XiView
 
+## Important notes
+
+* I've only tested this with whitelist mode. 
+* Updating your buffs works differently from the rest of your party. Your buffs will be shown in the wrong spot after removing/adding members, this fixes itself by obtaining a new buff/debuff.
+
+### Adding more buffs to whitelist
+
+`filters.lua` contains a whitelist which is built up entirely of buff ids. To add/remove a specific buff, I recommend checking out this list: https://wiki.dspt.info/index.php/Status_Effect_IDs
+
+
+
 Commands:
 #### Show a list of available commands
 `//pb|partybuffs help`
