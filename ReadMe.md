@@ -27,5 +27,5 @@ Commands:
 #### Sets the icon size to 20x20
 `//pb|partybuffs size 20 `
 
-```
+
 ![partybuffs](http://i.imgur.com/lXZfZVo.jpg)
