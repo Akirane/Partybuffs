@@ -1,6 +1,6 @@
 # PartyBuffs
 
-![Self Buff](buff.png)
+![Self Buff](https://github.com/Akirane/Partybuffs/blob/master/buff.PNG)
 
 Updated version which also shows your own buffs!
 
