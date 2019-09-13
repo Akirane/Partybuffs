@@ -1,0 +1,75 @@
+require('tables')
+
+--For buffs id you can check the buffs.lua in resources
+whitelist = L{
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    19,
+    20,
+    21,
+    28,
+    33,
+    40,
+    41,
+    42,
+    43,
+    113,
+    116,
+    134,
+    135,
+    136,
+    146,
+    147,
+    149,
+    187,
+    188,
+    265,
+    417,
+    418,
+    419,
+    513,
+    539,
+    540,
+    541
+} 
+-- buffs id separated by coma WAR = L{40, 41}, this will Fshow only the protect and shell buffs on Warrior main job 
+
+-- self_whitelist = L{3,4,5,6,7,8,9,11,12,13,14,15,16,19,20,21,28,33,40,41,42,43,113,116,134,135,136,146,147,149,187,188,265,417,418,419,513,539,540,541} -- buffs id separated by coma WAR = L{40, 41}, this will show only the protect and shell buffs on Warrior main job 
+
+blacklist = {
+    WAR = L{}, -- buffs id separated by coma WAR = {40, 41}, this will filter only the protect and shell buffs on Warrior main job
+    MNK = L{},
+    WHM = L{},
+    BLM = L{},
+    RDM = L{},
+    THF = L{},
+    PLD = L{},
+    DRK = L{},
+    BST = L{},
+    BRD = L{},
+    RNG = L{},
+    SAM = L{},
+    NIN = L{},
+    DRG = L{},
+    SMN = L{},
+    BLU = L{},
+    COR = L{},
+    PUP = L{},
+    DNC = L{},
+    SCH = L{},
+    GEO = L{},
+    RUN = L{}
+}
