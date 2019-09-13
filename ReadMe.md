@@ -11,7 +11,7 @@ Uses the modified icons of FFXIView of this version: https://github.com/KenshiDR
 
 ### Adding more buffs to whitelist
 
-`filters.lua` contains a whitelist which is built up entirely of buff ids. To add/remove a specific buff, I recommend checking out this list: https://wiki.dspt.info/index.php/Status_Effect_IDs
+`filters.lua` contains a whitelist which is built up entirely of buff ids. For example 40 is protect and 41 is shell. To add/remove a specific buff, I recommend checking out this list: https://wiki.dspt.info/index.php/Status_Effect_IDs
 
 
 
