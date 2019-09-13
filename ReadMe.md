@@ -1,5 +1,7 @@
 # PartyBuffs
 
+![Self Buff](buff.png)
+
 Updated version which also shows your own buffs!
 
 Shows party members buffs icons without the necesity of targetting. (Doesn't work on trust and fellow)
