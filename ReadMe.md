@@ -1,5 +1,7 @@
 # PartyBuffs
 
+Updated version which also shows your own buffs!
+
 Shows party members buffs icons without the necesity of targetting. (Doesn't work on trust and fellow)
 
 Uses the modified icons of FFXIView of this version: https://github.com/KenshiDRK/XiView
