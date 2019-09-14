@@ -25,7 +25,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.]]
 
 _addon.name = 'PartyBuffs'
-_addon.author = 'Kenshi'
+_addon.author = 'Kenshi, Akirane'
 _addon.version = '3.0'
 _addon.commands = {'pb', 'partybuffs'}
 
