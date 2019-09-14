@@ -1,5 +1,7 @@
 # PartyBuffs
 
+![Self Buff](https://github.com/Akirane/Partybuffs/blob/master/buff.PNG)
+
 Updated version which also shows your own buffs!
 
 Shows party members buffs icons without the necesity of targetting. (Doesn't work on trust and fellow)
@@ -25,5 +27,5 @@ Commands:
 #### Sets the icon size to 20x20
 `//pb|partybuffs size 20 `
 
-```
+
 ![partybuffs](http://i.imgur.com/lXZfZVo.jpg)
