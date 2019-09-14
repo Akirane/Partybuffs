@@ -58,8 +58,9 @@ alias_strs = aliases:keyset()
 local icon_size = (settings.size == 20 or defaults.size == 20) and 20 or 10
 local party_buffs = {'p1', 'p2', 'p3', 'p4', 'p5'}
 local self_buffs_images = {}
+local old_self_buffs = {}
 local self_y_pos = windower.get_windower_settings().ui_y_res - 5
-
+local old_party_count = 1
 do
     local x_pos = windower.get_windower_settings().ui_x_res - 190
     for x = 1, 10 do 
@@ -219,10 +220,27 @@ function self_buff_sort(buff_table)
         end
     end
     table.sort(self_buffs)
-    -- print('second self_buff_sort '..table.getn(buff_table))
-    -- print('second self_buff_sort '..table.getn(self_buffs))
-    self_update(self_buffs)
+    if check_if_equal(self_buffs, old_self_buffs) == false then
+        old_self_buffs = self_buffs
+        self_update(self_buffs)
+    else 
+        return
+    end
 end
+
+function check_if_equal(new_buffs, old_buffs)
+    return table.concat(new_buffs) == table.concat(old_buffs)
+end
+
+windower.register_event('prerender', function()
+
+    local party = T(windower.ffxi.get_party())
+    local party_count = party.party1_count
+    if old_party_count ~= party_count then
+        self_update(old_self_buffs)
+    end
+    -- body
+end)
 
 function self_update(buff_table)
 
@@ -249,7 +267,6 @@ function self_update(buff_table)
             self_buffs_images[i]:show()
         end
     end
-
 end
 
 function Update(buff_table)
