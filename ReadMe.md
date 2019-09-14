@@ -11,7 +11,6 @@ Uses the modified icons of FFXIView of this version: https://github.com/KenshiDR
 ## Important notes
 
 * I've only tested this with whitelist mode. 
-* Updating your buffs works differently from the rest of your party. Your buffs will be shown in the wrong spot after removing/adding members, this fixes itself by obtaining a new buff/debuff.
 
 ### Adding more buffs to whitelist
 
