@@ -30,6 +30,7 @@ _addon.version = '3.0'
 _addon.commands = {'pb', 'partybuffs'}
 
 images = require('images')
+texts = require('texts')
 packets = require('packets')
 config = require('config')
 require('pack')
@@ -38,7 +39,12 @@ require('filters')
 
 defaults = {}
 defaults.size = 20
-defaults.mode = 'blacklist'
+defaults.important_bar = {
+	x=math.floor(windower.get_windower_settings().ui_x_res*0.33),
+	y=math.floor(windower.get_windower_settings().ui_y_res*0.95), 
+	is_enabled=true
+}
+defaults.mode = 'whitelist'
 
 settings = config.load(defaults)
 
@@ -55,16 +61,50 @@ aliases = T{
 
 alias_strs = aliases:keyset()
 
+local ready = false
+local time_modulus = 30
+local frame_counter = 0
+local current_job = "init"
+
 local icon_size = (settings.size == 20 or defaults.size == 20) and 20 or 10
+local important_icon_size = 20
 local party_buffs = {'p1', 'p2', 'p3', 'p4', 'p5'}
 local self_buffs_images = {}
+local important_buffs_images = {}
+local important_buffs_label = {}
+local timer_buffs = {}
 local old_self_buffs = {}
 local self_y_pos = windower.get_windower_settings().ui_y_res - 5
+local important_y_pos = windower.get_windower_settings().ui_y_res - settings.important_bar.y
+local important_x_pos = windower.get_windower_settings().ui_x_res - settings.important_bar.x
 local old_party_count = 1
+local current_packet = {}
 do
     local x_pos = windower.get_windower_settings().ui_x_res - 190
     for x = 1, 10 do 
         self_buffs_images[x] = images.new({
+            color = {
+                alpha = 255
+            },
+            texture = {
+                fit = false
+            },
+            draggable = false,
+        })
+    end
+    for x = 1, 32 do 
+        important_buffs_label[x] = texts.new({
+			flags = {bold=true,draggable=false},
+			bg = {visible=false},
+			text = {
+				size = 10,
+				alpha = 185,
+				stroke={width=2,alpha=255,red=0,green=0,blue=0}
+			}
+        })
+    end
+    for x = 1, 32 do 
+        important_buffs_images[x] = images.new({
             color = {
                 alpha = 255
             },
@@ -96,8 +136,19 @@ local member_table = S{nil, nil, nil, nil, nil}
 buffs = T{}
 buffs['whitelist'] = {}
 buffs['blacklist'] = {}
+job_dict = L{'WAR', 'MNK', 'WHM', 'BLM', 'RDM', 'THF', 'PLD', 'DRK', 'BST', 'BRD', 'RNG', 'SAM', 'NIN', 'DRG', 'SMN', 'BLU', 'COR', 'PUP', 'DNC', 'SCH', 'GEO', 'RUN'}
 -- self_buffs = T{}
 -- self_buffs['whitelist'] = {}
+
+windower.register_event('job change',function(main_job)
+	current_job = job_dict[main_job]
+end)
+
+windower.register_event('login', 'load', function()
+    if windower.ffxi.get_player() ~= nil then
+        current_job = windower.ffxi.get_player().main_job
+    end
+end)
 
 windower.register_event('incoming chunk', function(id, data)
 
@@ -112,16 +163,24 @@ windower.register_event('incoming chunk', function(id, data)
     end
 
     if id == 0x063 then
-        local new_buffs = {}
         if data:byte(0x05) == 0x09 then
+			local new_buffs = {}
+			timer_buffs = {}
             for i= 1,32 do 
                 local buff_id = data:unpack('H', i*2+7)
                 if buff_id ~= 255 and buff_id ~= 0 then --255 "no buff"
                     new_buffs[#new_buffs+1] = buff_id
-                    -- print(buff_id)
+					if settings.important_bar.is_enabled then
+						if important_buffs[current_job]:contains(buff_id) then 
+							timer_buffs[#timer_buffs+1] = {}
+							timer_buffs[table.getn(timer_buffs)]['id'] = buff_id
+							timer_buffs[table.getn(timer_buffs)]['timer'] = math.floor((data:unpack('I', 33*2+7+((i-1)*4))/60)+ 572662306 + 1009810800)
+						end
+					end
                 end
             end
             self_buff_sort(new_buffs)
+			important_buff_sort(timer_buffs)
         end
     end
     
@@ -173,17 +232,6 @@ function buff_sort()
         local member = party[key_indices[k]]
         for i = 1, 32 do
             if member then
-     --            -- Check if table and value given an index exists
-     --            if buffs[settings.mode][member_table[member.name]] and buffs[settings.mode][member_table[member.name]][i] then
-     --                -- blaclist or whitelist
-     --                if buffs[settings.mode][member_table[member.name]][i] == 255 then
-					-- 	buffs[settings.mode][member_table[member.name]][i] = 1000
-					-- elseif blacklist[player.name] and blacklist[player.name][player.main_job] and blacklist[player.name][player.main_job]:contains(buffs['blacklist'][member_table[member.name]][i]) then
-     --                    buffs['blacklist'][member_table[member.name]][i] = 1000
-     --                elseif whitelist[player.name] and whitelist[player.name][player.main_job] and not whitelist[player.name][player.main_job]:contains(buffs['whitelist'][member_table[member.name]][i]) then
-     --                    buffs['whitelist'][member_table[member.name]][i] = 1000
-     --                end
-     --            end
                 if buffs[settings.mode][member_table[member.name]] and buffs[settings.mode][member_table[member.name]][i] then
                     -- blaclist or whitelist
                     if buffs[settings.mode][member_table[member.name]][i] == 255 then
@@ -205,15 +253,11 @@ function buff_sort()
 end
 
 function self_buff_sort(buff_table)
-    -- print('first self_buff_sort '..table.getn(buff_table))
-    -- print('buff_table ID:'..buff_table[1])
     local self_buffs = {}
     for i, buff in ipairs(buff_table) do 
-        -- print('buff, i '..i)
         if buff_table[i] == nil then 
             self_buffs[#self_buffs+1] = 1000
         elseif whitelist:contains(buff_table[i]) then
-            -- print('Contains the buff!')
             self_buffs[#self_buffs+1] = buff_table[i]
         else
             self_buffs[#self_buffs+1] = 1000
@@ -228,30 +272,37 @@ function self_buff_sort(buff_table)
     end
 end
 
+function important_buff_sort(buff_table)
+    for i=1 ,#buff_table, 1 do 
+        if buff_table[i]['id'] == nil then 
+            buff_table[i]['id'] = 1000
+        end
+    end
+    --important_update(buff_table)
+end
+
 function check_if_equal(new_buffs, old_buffs)
     return table.concat(new_buffs) == table.concat(old_buffs)
 end
 
 windower.register_event('prerender', function()
 
-    local party = T(windower.ffxi.get_party())
-    local party_count = party.party1_count
-    if old_party_count ~= party_count then
-        self_update(old_self_buffs)
-    end
-    -- body
+	local party = T(windower.ffxi.get_party())
+	local party_count = party.party1_count
+	if old_party_count ~= party_count then
+		self_update(old_self_buffs)
+	end
+	frame_counter = frame_counter +1
+	if (math.mod(frame_counter, time_modulus) == 0 and settings.important_bar.is_enabled) then
+		important_update(timer_buffs)
+		frame_counter = 0
+	end
 end)
 
 function self_update(buff_table)
-
-    -- for i in ipairs(buff_table) do 
-    --     print('index ['..i..'] '..buff_table[i])
-    -- end
     local party_info = windower.ffxi.get_party_info()
     for i=1,10 do 
-        -- print('Smaller or equal')
         if buff_table[i] == 1000 or buff_table[i] == nil then 
-            -- print('Clearing!')
             self_buffs_images[i]:clear()
             self_buffs_images[i]:hide()
         else
@@ -260,13 +311,57 @@ function self_update(buff_table)
             self_buffs_images[i]:size(icon_size, icon_size)
             local y =  self_y_pos - 20*(party_info.party1_count + 1)
             local x =  x_pos - (i*20)
-            -- print('Y pos: '..y)
-            -- print('X pos: '..x)
             self_buffs_images[i]:pos_y(y)
             self_buffs_images[i]:pos_x(x)
             self_buffs_images[i]:show()
         end
     end
+end
+function important_update(buff_table)
+
+	local cur_time = os.time()
+    for i=1,#buff_table,1 do 
+		local duration = buff_table[i]['timer'] - cur_time
+        if buff_table[i]['id'] == 1000 or buff_table[i]['id'] == nil then 
+            important_buffs_images[i]:clear()
+            important_buffs_images[i]:hide()
+			important_buffs_label[i]:hide()
+        else
+            local y =  important_y_pos
+            local x =  important_x_pos - (i*30)
+            important_buffs_images[i]:path(windower.windower_path .. 'addons/PartyBuffs/icons/' .. buff_table[i]['id'] .. '.png')
+            important_buffs_images[i]:transparency(0)
+            important_buffs_images[i]:size(important_icon_size, important_icon_size)
+            important_buffs_images[i]:pos_y(y)
+            important_buffs_images[i]:pos_x(x)
+            important_buffs_images[i]:show()
+
+			-- Labels
+            local text_y =  important_y_pos + 25 
+            local text_x =  important_x_pos - (i*30)
+			important_buffs_label[i]:text(get_duration(duration))
+            important_buffs_images[i]:size(important_icon_size + 5, important_icon_size +5)
+			important_buffs_label[i]:pos_y(text_y)
+			important_buffs_label[i]:pos_x(text_x)
+			important_buffs_label[i]:show()
+        end
+    end
+    for i=#buff_table+1,32,1 do 
+		important_buffs_images[i]:clear()
+		important_buffs_images[i]:hide()
+		important_buffs_label[i]:hide()
+	end
+
+end
+
+function get_duration(timer)
+	if timer >= 3600 then 
+		return string.format("%dh", math.floor(timer/3600))
+	elseif timer >= 60 then 
+		return string.format("%dm", math.floor(timer/60))
+	elseif timer >= 0 then 
+		return string.format("%ds", timer)
+	end
 end
 
 function Update(buff_table)
@@ -313,6 +408,14 @@ function Update(buff_table)
     
 end
 
+function clear_important_buffs()
+    for i=1,32,1 do 
+		important_buffs_images[i]:clear()
+		important_buffs_images[i]:hide()
+		important_buffs_label[i]:hide()
+	end
+end
+
 windower.register_event('load', function() --Create member table if addon is loaded while already in pt
     if not windower.ffxi.get_info().logged_in then return end
     
@@ -334,57 +437,38 @@ end)
 windower.register_event('addon command', function(...)
     local args = T{...}
     local command = args[1] and args[1]:lower()
+	local number_match = "%d+"
+	local on_match = T{'1', 'on', 'true'}
+	local off_match = T{'0', 'off', 'false'}
     if command then
-        if command == 'size' then
-            if not args[2] then
-                windower.add_to_chat(207,"Size not specified.")
-            elseif args[2] == '10' then
-                if icon_size == 10 then
-                    windower.add_to_chat(207,"Size already 10.")
-                else
-                    settings.size = 10
-                    icon_size = 10
-                    settings:save()
-                    buff_sort()
-                    windower.add_to_chat(207,'Icons size set to 10x10.')
-                end
-            elseif args[2] == '20' then
-                if icon_size == 20 then
-                    windower.add_to_chat(207,"Size already 20.")
-                else
-                    settings.size = 20
-                    icon_size = 20
-                    settings:save()
-                    buff_sort()
-                    windower.add_to_chat(207,'Icons size set to 20x20.')
-                end
-            else
-                windower.add_to_chat(207,'Icons size has to be 10 or 20.')
-            end
-        elseif command == 'mode' then
-            -- If no mode provided, print status.
-            local mode = args[2] or 'status'
-            if alias_strs:contains(mode) then
-                if mode == settings.mode then
-                    windower.add_to_chat(207,'Mode is already in ' .. mode .. ' mode.')
-                else
-                    settings.mode = aliases[mode]
-                    windower.add_to_chat(207,'Mode switched to ' .. settings.mode .. '.')
-                    settings:save()
-                    buff_sort()
-                end
-            elseif mode == 'status' then
-                windower.add_to_chat(207,'Currently in ' .. settings.mode .. ' mode.')
-            else
-                windower.add_to_chat(207,'Invalid mode:', args[1])
-                return
-            end
+		if command == 'important' then
+			if args[2] == 'toggle' then
+				local is_enabled = ""
+				settings.important_bar.is_enabled = not settings.important_bar.is_enabled
+				if (settings.important_bar.is_enabled) then is_enabled = "ON" end
+				if (not settings.important_bar.is_enabled) then 
+					is_enabled = "OFF" 
+					clear_important_buffs()
+				end
+				settings:save()
+				windower.add_to_chat(207,string.format("Important buffs bar is now set to: %s", is_enabled))
+			elseif args[2] == 'offset' then 
+				if not args[4] then
+					windower.add_to_chat(207,"Need X and Y parameters in order to update important buffs position.")
+				else 
+					settings.important_bar.x = tonumber(string.sub(args[3], string.find(args[3], number_match)))
+					settings.important_bar.y = tonumber(string.sub(args[4], string.find(args[4], number_match)))
+					important_x_pos = windower.get_windower_settings().ui_x_res - settings.important_bar.x
+					important_y_pos = windower.get_windower_settings().ui_y_res - settings.important_bar.y
+					windower.add_to_chat(207,string.format("Important buffs location is now [X:%s, Y:%s]", settings.important_bar.x, settings.important_bar.y))
+					settings:save()
+					important_update(timer_buffs)
+				end
+			end
         elseif command == 'help' then
             windower.add_to_chat(207,"Partybuffs Commands:")
-            windower.add_to_chat(207,"//pb|partybuffs size 10 (sets the icon size to 10x10)")
-            windower.add_to_chat(207,"//pb|partybuffs size 20 (sets the icon size to 20x20)")
-            windower.add_to_chat(207,"//pb|partybuffs mode w|wlist|white|whitelist (sets whitelist mode) ")
-            windower.add_to_chat(207,"//pb|partybuffs mode b|blist|black|blacklist (sets blacklist mode) ")
+            windower.add_to_chat(207,"//pb|partybuffs important toggle (toggles the important bar ON/OFF)")
+            windower.add_to_chat(207,"//pb|partybuffs important offset x y (sets important offset's right-margin (X) and bottom-margin (Y)")
         end
     else
         windower.add_to_chat(207,"First argument not specified, use size, mode or help.")
