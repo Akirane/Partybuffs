@@ -16,6 +16,8 @@ Uses the modified icons of FFXIView of this version: https://github.com/KenshiDR
 
 A new bar that shows important buffs as well as a timer has been implemented. This bar can be moved around with `//pb important offset X Y` or `//pb important offset 670 330` and the new offset will be saved in **data/settings.xml**.
 
+![Important Bar](https://github.com/Akirane/Partybuffs/blob/master/important_bar.PNG)
+
 ### Adding more buffs to be whitelisted in the important bar 
 
 In **filters.lua** there's now a new table called `important_buffs`. Apply status effect IDs you want to be shown here.
@@ -28,7 +30,6 @@ In **filters.lua** there's now a new table called `important_buffs`. Apply statu
 | `//pb important toggle`     | Toggles the important bar ON/OFF                                                            |
 | `//pb important offset X Y` | Sets important bar's X and Y offset (right-margin and bottom-margin in pixels respectively) |
 
-![Important Bar](https://github.com/Akirane/Partybuffs/blob/master/important_bar.PNG)
 
 ### Adding more buffs to whitelist
 
